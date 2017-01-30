@@ -4,66 +4,63 @@
 
 // see https://en.wikipedia.org/wiki/Range_encoding
 
-template <class InIter, class OutIter, uint32_t SymBits=8>
+template <class Context, class InIter, class OutIter, uint32_t SymBits=8>
 OutIter
-range_coder(OutIter dest, InIter begin, InIter end) {
-  constexpr uint32_t mask = ((uint32_t)1 << SymBits) - 1;
-  std::array<uint32_t, mask+1> starts;
-  std::array<uint32_t, mask+1> sizes;
+range_encoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
+  constexpr uint32_t mask = ctxt.mask;
 
-  for (auto &p : sizes) {
+  for (auto &p : ctxt.sizes) {
     p = 0;
   }
 
   for (auto p = begin; p != end; ++p) {
-    sizes[*p & mask]++;
+    ctxt.sizes[*p & mask]++;
   }
 
-  auto total = uint32_t(end - begin);
+  ctxt.total = uint32_t(end - begin);
   for (uint32_t i = 0, start = 0; i != mask+1; ++i) {
-    starts[i] = start;
-    start += sizes[i];
+    ctxt.starts[i] = start;
+    start += ctxt.sizes[i];
   }
 
   uint32_t low = 0;
   uint32_t range = 0xffffffff;
   constexpr int shift = 24;
+  constexpr int shift2 = 16;
   for (auto p = begin; p != end; ++p) {
-    auto start = starts[*p & mask];
-    auto size = sizes[*p & mask];
+    auto start = ctxt.starts[*p & mask];
+    auto size = ctxt.sizes[*p & mask];
 
-    range /= total;
+    range /= ctxt.total;
     low += start * range;
     range *= size;
 
     printf("%02x [%04x..%04x] range=%08x..%08x\n", *p & mask, start, start+size, low, low+range);
 
     if (range < 0x10000) {
-      *dest++ = low >> shift;
-      low <<= 8;
-      range <<= 8;
-      *dest++ = low >> shift;
-      low <<= 8;
-      range <<= 8;
+      *dest++ = uint8_t(low >> shift);
+      *dest++ = uint8_t(low >> shift2);
+      low <<= 16;
       range = 0xffffffff - low;
     }
 
     while ((low >> shift) == ((low + range) >> shift)) {
       printf("emit %02x\n", low >> shift);
-      *dest++ = low >> shift;
+      *dest++ = uint8_t(low >> shift);
       low <<= 8;
       range <<= 8;
     }
   }
 
-  while (range < 0x1000) {
-    *dest++ = low >> shift;
+  while (range < 0x10000) {
+    printf("emit %02x\n", low >> shift);
+    *dest++ = uint8_t(low >> shift);
     low <<= 8;
     range <<= 8;
   }
 
   low += 0x1000000;
-  *dest++ = low >> shift;
+  *dest++ = uint8_t(low >> shift);
 
   return dest;
 }
