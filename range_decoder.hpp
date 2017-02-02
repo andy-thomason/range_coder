@@ -1,12 +1,13 @@
 #include <cstdint>
 #include <stdio.h>
 #include <array>
+#include <algorithm>
 
 // see https://en.wikipedia.org/wiki/Range_encoding
 
 template <class Context, class InIter, class OutIter>
 OutIter
-range_decoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
+range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter end) {
   uint32_t low = 0;
   uint32_t range = 0xffffffff;
   constexpr int shift = 24;
@@ -33,6 +34,7 @@ range_decoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
     range *= size;
 
     printf("%02x [%04x..%04x] range=%08x..%08x\n", symbol, start, start+size, low, low+range);
+    *dest++ = symbol;
 
     if (range < 0x10000) {
       code = code * 0x100 + (*p++ & 0xff);

@@ -6,7 +6,7 @@
 
 template <class Context, class InIter, class OutIter, uint32_t SymBits=8>
 OutIter
-range_encoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
+range_encoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter end) {
   constexpr uint32_t mask = ctxt.mask;
 
   for (auto &p : ctxt.sizes) {
@@ -39,7 +39,9 @@ range_encoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
 
     if (range < 0x10000) {
       *dest++ = uint8_t(low >> shift);
+      if (dest >= destmax) return dest;
       *dest++ = uint8_t(low >> shift2);
+      if (dest >= destmax) return dest;
       low <<= 16;
       range = 0xffffffff - low;
     }
@@ -47,6 +49,7 @@ range_encoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
     while ((low >> shift) == ((low + range) >> shift)) {
       printf("emit %02x\n", low >> shift);
       *dest++ = uint8_t(low >> shift);
+      if (dest >= destmax) return dest;
       low <<= 8;
       range <<= 8;
     }
@@ -55,6 +58,7 @@ range_encoder(Context &ctxt, OutIter dest, InIter begin, InIter end) {
   while (range < 0x10000) {
     printf("emit %02x\n", low >> shift);
     *dest++ = uint8_t(low >> shift);
+    if (dest >= destmax) return dest;
     low <<= 8;
     range <<= 8;
   }
