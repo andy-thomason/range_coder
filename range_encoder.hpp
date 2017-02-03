@@ -35,16 +35,7 @@ range_encoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
     low += start * range;
     range *= size;
 
-    printf("%02x [%04x..%04x] range=%08x..%08x\n", *p & mask, start, start+size, low, low+range);
-
-    if (range < 0x10000) {
-      *dest++ = uint8_t(low >> shift);
-      if (dest >= destmax) return dest;
-      *dest++ = uint8_t(low >> shift2);
-      if (dest >= destmax) return dest;
-      low <<= 16;
-      range = 0xffffffff - low;
-    }
+    printf("%02x[%04x..%04x] range=%08x..%08x\n", *p & mask, start, start+size, low, low+range);
 
     while ((low >> shift) == ((low + range) >> shift)) {
       printf("emit %02x\n", low >> shift);
@@ -52,6 +43,18 @@ range_encoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
       if (dest >= destmax) return dest;
       low <<= 8;
       range <<= 8;
+    }
+
+    if (range < 0x10000) {
+      printf("emit2 %02x\n", low >> shift);
+      *dest++ = uint8_t(low >> shift);
+      if (dest >= destmax) return dest;
+      low >>= 8;
+      printf("emit2 %02x\n", low >> shift);
+      *dest++ = uint8_t(low >> shift);
+      if (dest >= destmax) return dest;
+      low >>= 8;
+      range = 0xffffffff - low;
     }
   }
 

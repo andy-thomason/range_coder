@@ -54,9 +54,10 @@ int main(int argc, char **argv) {
   if (decode) {
     auto p = file_in.data();
     memcpy(&ctxt, p, sizeof(ctxt));
-    auto e = p + sizeof(ctxt) + ctxt.total;
+    p += sizeof(ctxt);
+    auto e = p + ctxt.total;
     msg_out.resize(ctxt.total);
-    auto end = range_decoder(ctxt, msg_out.begin(), msg_out.end(), file_in.begin(), file_in.end());
+    auto end = range_decoder(ctxt, msg_out.begin(), msg_out.end(), p, e);
 
     std::string outname = filename;
     outname.append(".dec");

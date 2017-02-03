@@ -23,6 +23,7 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
   for (int i = 0; i != ctxt.total; ++i) {
     uint32_t divisor = range / ctxt.total;
     uint32_t value = (code - low) / divisor;
+    printf("%04x\n", value);
     auto lb = std::upper_bound(ctxt.starts.begin(), ctxt.starts.end(), value);
 
     uint32_t symbol = lb - 1 - ctxt.starts.begin();
@@ -36,17 +37,20 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
     printf("%02x [%04x..%04x] range=%08x..%08x\n", symbol, start, start+size, low, low+range);
     *dest++ = symbol;
 
-    if (range < 0x10000) {
-      code = code * 0x100 + (*p++ & 0xff);
-      code = code * 0x100 + (*p++ & 0xff);
-      low <<= 16;
-      range = 0xffffffff - low;
-    }
-
     while ((low >> shift) == ((low + range) >> shift)) {
+      printf("emit %02x\n", code >> 24);
       code = code * 0x100 + (*p++ & 0xff);
       low <<= 8;
       range <<= 8;
+    }
+
+    if (range < 0x10000) {
+      printf("emit2 %02x\n", code >> 24);
+      code = code * 0x100 + (*p++ & 0xff);
+      printf("emit2 %02x\n", code >> 24);
+      code = code * 0x100 + (*p++ & 0xff);
+      low <<= 16;
+      range = 0xffffffff - low;
     }
   }
   return dest;
