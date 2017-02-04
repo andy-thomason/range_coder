@@ -20,10 +20,9 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
     code = code * 0x100 + (*p++ & 0xff);
   }
 
-  for (int i = 0; i != ctxt.total; ++i) {
+  for (int i = 0; i != ctxt.total && dest != destmax; ++i) {
     uint32_t divisor = range / ctxt.total;
     uint32_t value = (code - low) / divisor;
-    printf("%04x\n", value);
     auto lb = std::upper_bound(ctxt.starts.begin(), ctxt.starts.end(), value);
 
     uint32_t symbol = lb - 1 - ctxt.starts.begin();
@@ -34,20 +33,20 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
     low += start * range;
     range *= size;
 
-    printf("%02x [%04x..%04x] range=%08x..%08x\n", symbol, start, start+size, low, low+range);
+    //printf("%02x [%04x..%04x] range=%08x..%08x\n", symbol, start, start+size, low, low+range);
+    //fflush(stdout);
     *dest++ = symbol;
 
+    // if the top byte is the same output the byte and increase the range
     while ((low >> shift) == ((low + range) >> shift)) {
-      printf("emit %02x\n", code >> 24);
       code = code * 0x100 + (*p++ & 0xff);
       low <<= 8;
       range <<= 8;
     }
 
+    // if the range is too small, output some bytes and increase the range.
     if (range < 0x10000) {
-      printf("emit2 %02x\n", code >> 24);
       code = code * 0x100 + (*p++ & 0xff);
-      printf("emit2 %02x\n", code >> 24);
       code = code * 0x100 + (*p++ & 0xff);
       low <<= 16;
       range = 0xffffffff - low;
