@@ -4,6 +4,7 @@
 //
 // Maps readable and writable files
 //
+////////////////////////////////////////////////////////////////////////////////
 
 
 #ifndef _MAP_HPP_INCLUDED_
@@ -12,7 +13,6 @@
 
 #ifndef _MSC_VER
   #include <sys/mman.h>
-  #include <sys/types.h>
   #include <fcntl.h>
   #include <unistd.h>
   #include <sys/stat.h>
@@ -37,8 +37,11 @@ public:
   uint8_t *end() const { return (uint8_t*)data_ + size_; }
 
   void truncate(size_t size) {
-    (void)ftruncate(fd_, size);
-    size_ = size;
+    printf("truncating %08lx\n", (long)size);
+    if (write_ && ftruncate(fd_, size) != -1) {
+      printf("truncated %08lx\n", (long)size);
+      size_ = size;
+    }
   }
 
 private:
@@ -61,15 +64,15 @@ private:
         data_  = mmap(NULL, size_, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd_, 0);
       }
     } else if (write_) {
-      fd_ = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0);
+      printf("writing %s %ld\n", filename, long(size));
+      fd_ = open(filename, O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
+      printf("fd=%d\n", fd_);
       if (fd_ != -1) {
-        (void)ftruncate(fd_, size);
-        size_ = size;
-        //lseek(fd_, size_ - 1, SEEK_END);
-        //char zero = 0;
-        //write(fd_, (void*)&zero, 1);
-        //lseek(fd_, 0l, SEEK_SET);
-        data_  = mmap(NULL, size_, PROT_WRITE, MAP_PRIVATE, fd_, 0);
+        truncate(size);
+        /*lseek(fd_, size-1, SEEK_SET);
+        (void)write(fd_, (void*)"", 1);
+        lseek(fd_, 0, SEEK_SET);*/
+        data_  = mmap(NULL, size_, PROT_WRITE, MAP_SHARED, fd_, 0);
       }
     }
   }

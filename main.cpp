@@ -10,11 +10,10 @@
 
 struct context {
   char sig[8] = "rcoder";
-  std::array<uint32_t, 256> starts;
-  std::array<uint32_t, 256> sizes;
-  static const uint32_t mask = 255;
-  uint32_t total;
+  size_t total;
   size_t size;
+  std::array<uint16_t, 256+1> starts;
+  static const uint32_t mask = 255;
 };
 
 int usage() {
@@ -47,25 +46,31 @@ int main(int argc, char **argv) {
   context ctxt;
   if (decode) {
     std::string outname = filename;
-    outname.append(".dec");
+    size_t f = outname.rfind(".rc");
+    if (false && f == outname.size() - 3) {
+      outname.resize(outname.size() - 3);
+    } else {
+      outname.append(".dec");
+    }
 
     auto p = in_file.begin();
     memcpy(&ctxt, p, sizeof(ctxt));
     p += sizeof(ctxt);
-    auto e = p + ctxt.total;
+    auto e = p + ctxt.size;
 
-    map out_file(outname, "w", ctxt.total);
+    map out_file(outname, "w", ctxt.size);
     auto end = range_decoder(ctxt, out_file.begin(), out_file.end(), p, e);
 
-    printf("%d..%d bytes\n", int(in_file.size()), int(out_file.size()));
+    printf("%ld..%ld bytes\n", long(in_file.size()), long(out_file.size()));
   } else {
     std::string outname = filename;
     outname.append(".rc");
 
     map out_file(outname, "w", in_file.size() * 2);
-    auto end = range_encoder(ctxt, out_file.begin(), out_file.end(), in_file.begin(), in_file.end());
+    auto end = range_encoder(ctxt, out_file.begin() + sizeof(ctxt), out_file.end(), in_file.begin(), in_file.end());
+    memcpy(out_file.data(), &ctxt, sizeof(ctxt));
     out_file.truncate(end - out_file.begin());
-    printf("%d..%d bytes\n", int(in_file.size()), int(out_file.size()));
+    printf("%ld..%ld bytes\n", long(in_file.size()), long(out_file.size()));
   }
 }
 

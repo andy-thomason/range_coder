@@ -20,24 +20,25 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
     code = code * 0x100 + (*p++ & 0xff);
   }
 
-  for (int i = 0; i != ctxt.total && dest != destmax; ++i) {
+  printf("size=%ld total=%ld\n", ctxt.size, ctxt.total);
+
+  for (int i = 0; i != ctxt.size && dest != destmax; ++i) {
     uint32_t divisor = range / ctxt.total;
     uint32_t value = (code - low) / divisor;
     auto lb = std::upper_bound(ctxt.starts.begin(), ctxt.starts.end(), value);
 
     uint32_t symbol = lb - 1 - ctxt.starts.begin();
     uint32_t start = lb[-1];
-    uint32_t size = ctxt.sizes[symbol];
+    uint32_t size = ctxt.starts[symbol+1] - ctxt.starts[symbol];
 
     range = divisor;
     low += start * range;
     range *= size;
 
     //printf("%02x [%04x..%04x] range=%08x..%08x\n", symbol, start, start+size, low, low+range);
-    //fflush(stdout);
     *dest++ = symbol;
 
-    // if the top byte is the same output the byte and increase the range
+    // if the top byte is the same, output the byte and increase the range
     while ((low >> shift) == ((low + range) >> shift)) {
       code = code * 0x100 + (*p++ & 0xff);
       low <<= 8;
