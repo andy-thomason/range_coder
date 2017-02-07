@@ -8,6 +8,8 @@ on a BWT (Burrows Wheeler Transform). We are not using an adaptive model as in L
 performance improvement. In addition to this Gzip, Bzip2 and LZMA are stubbornly single threaded and LZMA uses a highly
 complex coding scheme which is hard to optimize.
 
+Our library is a modern C++ header only one suitable for single module compilation (ie. sub ten second builds for large projects).
+
 By comparison, 
 
 (http://tukaani.org/lzma/benchmarks.html)
