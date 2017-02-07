@@ -5,7 +5,7 @@ and more on a high-end server, ie. able to decompress an entire 1TB SSD drive in
 
 We are experimenting with using a hybrid of a context sensitive markov model range coder (as in LZMA) and some variation
 on a BWT (Burrows Wheeler Transform). We are not using an adaptive model as in LZMA and this gives us some considerable
-performance improvement. In addition to this Gzip, Bzip2 and LZMA are stubbornly single threaded and LZMA uses a highly
+performance improvement. In addition to this Gzip, Bzip2 and LZMA are stubbornly single threaded and like Brotli, LZMA uses a highly
 complex coding scheme which is hard to optimize.
 
 Our library is a modern C++ header only one suitable for single module compilation (ie. sub ten second builds for large projects).
