@@ -10,10 +10,13 @@
 
 struct context {
   char sig[8] = "rcoder";
-  size_t total;
   size_t size;
-  std::array<uint16_t, 256+1> starts;
+  std::array<uint32_t, 256+1> starts;
   static const uint32_t mask = 255;
+
+  void error(size_t offset, const char *msg) {
+    printf("%s @ %lx", msg, long(offset));
+  }
 };
 
 int usage() {
@@ -66,8 +69,13 @@ int main(int argc, char **argv) {
     std::string outname = filename;
     outname.append(".rc");
 
-    map out_file(outname, "w", in_file.size() * 2);
+    map out_file(outname, "w", in_file.size());
     auto end = range_encoder(ctxt, out_file.begin() + sizeof(ctxt), out_file.end(), in_file.begin(), in_file.end());
+    if (end == out_file.end()) {
+      printf("error: compressed file too long\n");
+      out_file.truncate(0);
+      return 1;
+    }
     memcpy(out_file.data(), &ctxt, sizeof(ctxt));
     out_file.truncate(end - out_file.begin());
     printf("%ld..%ld bytes\n", long(in_file.size()), long(out_file.size()));
