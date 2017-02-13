@@ -19,12 +19,15 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <chrono>
 
 
 template<class value_t=std::uint8_t, class addr_t=std::uint32_t, class allocator_t=std::allocator<char>>
 class suffix_array {
 public:
   suffix_array(const value_t *begin, const value_t *end) {
+
+    auto t0 = std::chrono::high_resolution_clock::now();
     constexpr bool debug_full = false;
     constexpr bool debug_stats = true;
     std::array<addr_t, 256> freq;
@@ -57,7 +60,11 @@ public:
     typedef std::pair<addr_t, addr_t> sorter_t;
     std::vector<sorter_t> sorter;
 
+    auto t1 = std::chrono::high_resolution_clock::now();
+    printf("st: %d\n", int(std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count()));
+
     for (addr_t h = 1; h < size; h *=2) {
+      auto t0 = std::chrono::high_resolution_clock::now();
       if (debug_full) {
         for (size_t i = 0; i != size+1; ++i) {
           addr_t string_pos = rank_[addr_[i]];
@@ -114,7 +121,9 @@ public:
       }
 
       if (debug_full || debug_stats) {
+        auto t1 = std::chrono::high_resolution_clock::now();
         printf("h=%05x  %d sorts  %d values sorted  %f ave.\n", int(h), int(num_sorts), int(tot_sorts), 1.0 * tot_sorts / num_sorts);
+        printf(" t: %d\n", int(std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count()));
       }
       if (!more_work_to_do) break;
     } // h
