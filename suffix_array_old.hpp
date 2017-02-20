@@ -38,16 +38,41 @@ public:
   suffix_array(const value_t *begin, const value_t *end) {
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    constexpr bool debug_full = true;
+    constexpr bool debug_full = false;
     constexpr bool debug_stats = true;
+    std::array<addr_t, 256> freq;
+    std::fill(freq.begin(), freq.end(), 0);
 
-    addr_t size = addr_t(end - begin);
+    std::for_each(begin, end, [&freq](value_t v) { freq[v]++; });
 
+    std::array<addr_t, 256> ptr;
+    std::partial_sum(freq.begin(), freq.end(), ptr.begin());
+
+    size_t size = std::accumulate(freq.begin(), freq.end(), addr_t(0));
+
+    addr_.resize(size+1);
+    rank_.resize(size+1);
+
+    addr_[0] = addr_t(size);
+    rank_[size] = 0;
+    for (auto p = begin; p != end; ++p) {
+      addr_t dest = --ptr[*p]+1;
+      addr_t addr = addr_[dest] = addr_t(p - begin);
+      rank_[addr] = dest;
+    }
+
+    std::vector<addr_t, allocator_t> groups(size+1);
+    groups[0] = 0;
+    for (size_t i = 0; i != size; ++i) {
+      groups[i+1] = ptr[begin[addr_[i+1]]]+1;
+    }
 
     typedef std::pair<addr_t, addr_t> sorter_t;
     std::vector<sorter_t> sorter;
-    sorter.reserve(size+1);
-    rank_.resize(size+1);
+    sorter.reserve(0x100000);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    printf("st: %d\n", int(std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count()));
 
     {
       auto t0 = std::chrono::high_resolution_clock::now();
@@ -57,52 +82,39 @@ public:
         acc = acc * 0x100 + (*p & 0xff);
       }
       for (auto p = begin+4; p != end; ++p) {
+        //printf("%08x %02x\n", acc, p[-4] & 0xff);
         sorter.emplace_back(acc, addr_t(sorter.size()));
         acc = acc * 0x100 + (*p & 0xff);
       }
       for (int i = 0; i != 4; ++i) {
+        //printf("%08x %02x\n", acc, 0);
         sorter.emplace_back(acc, addr_t(sorter.size()));
         acc *= 100;
       }
       std::sort(sorter.begin(), sorter.end());
-
-      rank_[size] = 0;
-      for (addr_t i = 0; i != size+1; ) {
-        addr_t key = sorter[i].first;
-        addr_t group = sorter[i].first = addr_t(i);
-        rank_[sorter[i].second] = i;
-        addr_t j = i + 1;
-        while (j != size+1 && sorter[j].first == key) {
-          rank_[sorter[j].second] = j;
-          sorter[j].first = group;
-          ++j;
-        }
-        i = j;
-      }
       auto t1 = std::chrono::high_resolution_clock::now();
       printf("ex: %d\n", int(std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count()));
     }
 
     for (addr_t h = 1; h < size; h *=2) {
       auto t0 = std::chrono::high_resolution_clock::now();
-      if (debug_full) {
+      if (h == 8 && debug_full) {
         for (size_t i = 0; i != size+1; ++i) {
-          addr_t string_pos = rank_[sorter[i].second];
-          addr_t next_group = addr_[i] + h < size+1 ? sorter[rank_[sorter[i].second+h]].first : 0;
+          addr_t string_pos = rank_[addr_[i]];
+          addr_t next_group = addr_[i] + h < size+1 ? groups[rank_[addr_[i]+h]] : 0;
           char tmp[11];
           int dest = 0;
           for (auto p = begin + addr_[i]; p != end && dest != 10; ++p) {
             tmp[dest++] = *p < ' ' || *p > '~' ? '.' : *p;
           }
           tmp[dest] = 0;
-          printf("%04x: g=%04x a=%04x r=%04x ng=%04x h=%04x %s\n", int(i), int(sorter[i].first), int(sorter[i].second), string_pos, next_group, h, tmp);
+          printf("%04x: a=%04x g=%04x r=%04x ng=%04x h=%04x %s\n", int(i), int(addr_[i]), int(groups[i]), string_pos, next_group, h, tmp);
         }
       }
 
       size_t num_sorts = 0;
       size_t tot_sorts = 0;
       bool more_work_to_do = false;
-      /*
       for (size_t i = 0; i != size + 1; ) {
         addr_t group = groups[i];
         size_t j = i + 1;
@@ -139,7 +151,7 @@ public:
           }
         }
         i = j;
-      }*/
+      }
 
       if (debug_full || debug_stats) {
         auto t1 = std::chrono::high_resolution_clock::now();
