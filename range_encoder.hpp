@@ -84,7 +84,7 @@ range_encoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
   ctxt.size = size;
   for (uint32_t i = 0, start = 0; i != mask+1; ++i) {
     ctxt.starts[i] = start;
-    start += sizes[i];
+    start += (uint32_t)sizes[i];
   }
   ctxt.starts[mask+1] = uint32_t(total);
 

@@ -22,7 +22,7 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
   }
 
   constexpr size_t total = 0x10000;
-  printf("size=%ld total=%ld\n", ctxt.size, total);
+  printf("size=%ld total=%ld\n", long(ctxt.size), long(total));
 
   auto &symbols = *new std::array<uint8_t, 65536>{};
   for (int i = 0, sym = 0; sym != mask+1; ++sym) {

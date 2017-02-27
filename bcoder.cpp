@@ -44,6 +44,10 @@ int main(int argc, char **argv) {
     }
   }
 
+  if (filename == nullptr) {
+    return usage();
+  }
+
   map in_file(filename, "r");
 
   context ctxt;
