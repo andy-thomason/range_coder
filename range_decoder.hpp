@@ -36,7 +36,7 @@ range_decoder(Context &ctxt, OutIter dest, OutIter destmax, InIter begin, InIter
   for (int i = 0; i != max_size; ++i) {
     acc_t divisor = range / total;
     acc_t value = (code - low) / divisor;
-    uint8_t symbol = symbols[value];
+    uint8_t symbol = symbols[(size_t)value];
     uint32_t start = ctxt.starts[symbol];
     uint32_t size = ctxt.starts[symbol+1] - ctxt.starts[symbol];
 
