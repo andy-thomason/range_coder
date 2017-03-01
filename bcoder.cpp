@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     std::string outname = filename;
     outname.append(".rc");
 
-    map out_file(outname, "w", in_file.size() + in_file.size()/0x10000);
+    map out_file(outname, "w", in_file.size() + in_file.size()/0x10000 + 256);
     auto end = block_sorting_encoder(ctxt, out_file.begin(), out_file.end(), in_file.begin(), in_file.end());
     if (end == out_file.end()) {
       printf("error: compressed file too long\n");
